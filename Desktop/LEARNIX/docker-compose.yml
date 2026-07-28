@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    container_name: course_backend
+    ports:
+      - "5000:5000"
+    environment:
+      - NODE_ENV=production
+    env_file:
+      - ./backend/.env
+    depends_on:
+      - mongo
+    volumes:
+      - ./backend/uploads:/app/uploads
+    networks:
+      - course_network
+
+  frontend:
+    build: ./frontend
+    container_name: course_frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - course_network
+
+  mongo:
+    image: mongo:7.0
+    container_name: course_mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - course_network
+
+networks:
+  course_network:
+    driver: bridge
+
+volumes:
+  mongo_data:
