@@ -45,7 +45,13 @@ const allowedOrigins = [
 // Socket.io
 const io = new Server(server, {
     cors: {
-        origin: allowedOrigins,
+        origin: (origin, callback) => {
+            if (!origin) return callback(null, true);
+            if (allowedOrigins.includes(origin) || origin.includes('.vercel.app')) {
+                return callback(null, true);
+            }
+            callback(new Error('Not allowed by CORS'));
+        },
         credentials: true,
     },
 });
@@ -56,8 +62,12 @@ app.set('io', io);
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors({
     origin: (origin, callback) => {
-        if (!origin || allowedOrigins.includes(origin)) callback(null, true);
-        else callback(new Error('Not allowed by CORS'));
+        if (!origin) return callback(null, true);
+        // Allow specific origins or Vercel preview deployments
+        if (allowedOrigins.includes(origin) || origin.includes('.vercel.app')) {
+            return callback(null, true);
+        }
+        callback(new Error('Not allowed by CORS'));
     },
     credentials: true
 }));
