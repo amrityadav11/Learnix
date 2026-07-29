@@ -6,9 +6,15 @@ const api = axios.create({
     timeout: 30000,
 });
 
-// Request interceptor
+// Request interceptor - add token from localStorage to headers
 api.interceptors.request.use(
-    (config) => config,
+    (config) => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+    },
     (error) => Promise.reject(error)
 );
 
@@ -17,7 +23,8 @@ api.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response?.status === 401) {
-            // Clear user state on 401 but don't redirect (handled by router)
+            // Clear token and user state on 401
+            localStorage.removeItem('token');
             window.dispatchEvent(new CustomEvent('auth:unauthorized'));
         }
         return Promise.reject(error);

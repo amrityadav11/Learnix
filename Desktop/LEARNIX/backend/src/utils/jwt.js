@@ -12,7 +12,7 @@ const sendTokenResponse = (user, statusCode, res, message = 'Success') => {
     const cookieOptions = {
         expires: new Date(Date.now() + cookieExpireDays * 24 * 60 * 60 * 1000),
         httpOnly: true,
-        sameSite: 'strict',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
         secure: process.env.NODE_ENV === 'production',
     };
 

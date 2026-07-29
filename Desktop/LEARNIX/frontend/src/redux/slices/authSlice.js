@@ -96,6 +96,10 @@ const authSlice = createSlice({
             .addCase(loginUser.fulfilled, (state, action) => {
                 state.loading = false;
                 state.user = action.payload.user;
+                // Store token in localStorage for Authorization header
+                if (action.payload.token) {
+                    localStorage.setItem('token', action.payload.token);
+                }
                 toast.success(action.payload.message || 'Login successful!');
             })
             .addCase(loginUser.rejected, (state, action) => {
@@ -107,6 +111,10 @@ const authSlice = createSlice({
             .addCase(registerUser.fulfilled, (state, action) => {
                 state.loading = false;
                 state.user = action.payload.user;
+                // Store token in localStorage for Authorization header
+                if (action.payload.token) {
+                    localStorage.setItem('token', action.payload.token);
+                }
                 toast.success(action.payload.message || 'Registration successful!');
             })
             .addCase(registerUser.rejected, (state, action) => {
@@ -116,6 +124,8 @@ const authSlice = createSlice({
             })
             .addCase(logoutUser.fulfilled, (state) => {
                 state.user = null;
+                // Clear token from localStorage
+                localStorage.removeItem('token');
                 toast.success('Logged out successfully.');
             })
             .addCase(updateProfile.fulfilled, (state, action) => {
