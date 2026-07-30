@@ -7,7 +7,26 @@ const Coupon = require('../models/Coupon');
 const Blog = require('../models/Blog');
 const Settings = require('../models/Settings');
 const Notification = require('../models/Notification');
+const ActivityLog = require('../models/ActivityLog');
 const ErrorResponse = require('../utils/errorResponse');
+
+// Helper function to log admin activities
+const logActivity = async (userId, action, description, targetModel = 'None', targetId = null, metadata = {}, req = null) => {
+    try {
+        await ActivityLog.create({
+            user: userId,
+            action,
+            actionDescription: description,
+            targetModel,
+            targetId,
+            metadata,
+            ipAddress: req?.ip || req?.connection?.remoteAddress,
+            userAgent: req?.get('user-agent')
+        });
+    } catch (err) {
+        console.error('Activity log error:', err.message);
+    }
+};
 
 // @desc   Get admin dashboard stats
 // @route  GET /api/v1/admin/stats
@@ -187,6 +206,44 @@ exports.approveCourse = async (req, res, next) => {
     }
 };
 
+// @desc   List/Delist (Publish/Unpublish) course
+// @route  PUT /api/v1/admin/courses/:id/toggle-publish
+exports.toggleCoursePublish = async (req, res, next) => {
+    try {
+        const course = await Course.findById(req.params.id);
+        if (!course) return next(new ErrorResponse('Course not found.', 404));
+
+        // Toggle publish status
+        course.isPublished = !course.isPublished;
+        course.status = course.isPublished ? 'published' : 'unpublished';
+
+        if (course.isPublished) {
+            course.publishedAt = Date.now();
+        }
+
+        await course.save();
+
+        // Notify instructor
+        await Notification.create({
+            recipient: course.instructor,
+            type: course.isPublished ? 'course_published' : 'course_unpublished',
+            title: course.isPublished ? 'Course Published' : 'Course Unpublished',
+            message: course.isPublished
+                ? `Your course "${course.title}" is now live and visible to students.`
+                : `Your course "${course.title}" has been unpublished and is no longer visible to students.`,
+            link: `/instructor/courses/${course._id}`,
+        });
+
+        res.status(200).json({
+            success: true,
+            course,
+            message: course.isPublished ? 'Course published successfully' : 'Course unpublished successfully'
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 // @desc   Manage categories
 // @route  POST /api/v1/admin/categories
 exports.createCategory = async (req, res, next) => {
@@ -216,23 +273,156 @@ exports.deleteCategory = async (req, res, next) => {
     }
 };
 
-// @desc   Get all orders (admin)
+// @desc   Get all orders (admin) with date filtering
 // @route  GET /api/v1/admin/orders
 exports.getAdminOrders = async (req, res, next) => {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 20;
         const skip = (page - 1) * limit;
+        const { period, startDate, endDate, status } = req.query;
 
-        const orders = await Order.find()
-            .populate('user', 'name email')
-            .populate('courses.course', 'title')
+        let query = {};
+
+        // Filter by status
+        if (status && status !== 'all') {
+            query.paymentStatus = status;
+        }
+
+        // Filter by time period
+        const now = new Date();
+        if (period) {
+            switch (period) {
+                case 'today':
+                    query.createdAt = {
+                        $gte: new Date(now.setHours(0, 0, 0, 0)),
+                        $lte: new Date(now.setHours(23, 59, 59, 999))
+                    };
+                    break;
+                case 'week':
+                    const weekAgo = new Date(now.setDate(now.getDate() - 7));
+                    query.createdAt = { $gte: weekAgo };
+                    break;
+                case 'month':
+                    const monthAgo = new Date(now.setMonth(now.getMonth() - 1));
+                    query.createdAt = { $gte: monthAgo };
+                    break;
+                case 'year':
+                    const yearAgo = new Date(now.setFullYear(now.getFullYear() - 1));
+                    query.createdAt = { $gte: yearAgo };
+                    break;
+                case 'custom':
+                    if (startDate && endDate) {
+                        query.createdAt = {
+                            $gte: new Date(startDate),
+                            $lte: new Date(endDate)
+                        };
+                    }
+                    break;
+            }
+        }
+
+        const orders = await Order.find(query)
+            .populate('user', 'name email avatar')
+            .populate('courses.course', 'title thumbnail')
             .sort('-createdAt')
             .skip(skip)
             .limit(limit);
 
-        const total = await Order.countDocuments();
-        res.status(200).json({ success: true, orders, total, totalPages: Math.ceil(total / limit) });
+        const total = await Order.countDocuments(query);
+
+        // Calculate stats for the filtered period
+        const stats = await Order.aggregate([
+            { $match: query },
+            {
+                $group: {
+                    _id: null,
+                    totalRevenue: { $sum: '$finalAmount' },
+                    totalOrders: { $sum: 1 },
+                    completedOrders: {
+                        $sum: { $cond: [{ $eq: ['$paymentStatus', 'completed'] }, 1, 0] }
+                    },
+                    completedRevenue: {
+                        $sum: { $cond: [{ $eq: ['$paymentStatus', 'completed'] }, '$finalAmount', 0] }
+                    }
+                }
+            }
+        ]);
+
+        res.status(200).json({
+            success: true,
+            orders,
+            total,
+            totalPages: Math.ceil(total / limit),
+            stats: stats[0] || { totalRevenue: 0, totalOrders: 0, completedOrders: 0, completedRevenue: 0 }
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc   Download orders report (CSV format)
+// @route  GET /api/v1/admin/orders/download
+exports.downloadOrdersReport = async (req, res, next) => {
+    try {
+        const { period, startDate, endDate, status } = req.query;
+
+        let query = {};
+
+        // Apply same filters as getAdminOrders
+        if (status && status !== 'all') {
+            query.paymentStatus = status;
+        }
+
+        const now = new Date();
+        if (period) {
+            switch (period) {
+                case 'today':
+                    query.createdAt = {
+                        $gte: new Date(now.setHours(0, 0, 0, 0)),
+                        $lte: new Date(now.setHours(23, 59, 59, 999))
+                    };
+                    break;
+                case 'week':
+                    const weekAgo = new Date(now.setDate(now.getDate() - 7));
+                    query.createdAt = { $gte: weekAgo };
+                    break;
+                case 'month':
+                    const monthAgo = new Date(now.setMonth(now.getMonth() - 1));
+                    query.createdAt = { $gte: monthAgo };
+                    break;
+                case 'year':
+                    const yearAgo = new Date(now.setFullYear(now.getFullYear() - 1));
+                    query.createdAt = { $gte: yearAgo };
+                    break;
+                case 'custom':
+                    if (startDate && endDate) {
+                        query.createdAt = {
+                            $gte: new Date(startDate),
+                            $lte: new Date(endDate)
+                        };
+                    }
+                    break;
+            }
+        }
+
+        const orders = await Order.find(query)
+            .populate('user', 'name email')
+            .populate('courses.course', 'title')
+            .sort('-createdAt');
+
+        // Generate CSV content
+        const csvHeader = 'Order ID,Date,Customer Name,Customer Email,Payment Method,Status,Courses,Total Amount,Discount,Final Amount\n';
+        const csvRows = orders.map(order => {
+            const courses = order.courses.map(c => c.course?.title || 'Unknown').join('; ');
+            return `${order._id},${new Date(order.createdAt).toISOString()},${order.user?.name || 'N/A'},${order.user?.email || 'N/A'},${order.paymentMethod},${order.paymentStatus},"${courses}",${order.totalAmount},${order.couponDiscount || 0},${order.finalAmount}`;
+        }).join('\n');
+
+        const csv = csvHeader + csvRows;
+
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename=orders-report-${Date.now()}.csv`);
+        res.status(200).send(csv);
     } catch (error) {
         next(error);
     }
@@ -308,7 +498,156 @@ exports.deleteReview = async (req, res, next) => {
         const review = await Review.findByIdAndDelete(req.params.id);
         if (!review) return next(new ErrorResponse('Review not found.', 404));
         await Review.calcAverageRating(review.course);
+
+        // Log activity
+        await logActivity(req.user.id, 'review_deleted', `Deleted review for course`, 'Review', req.params.id, {}, req);
+
         res.status(200).json({ success: true, message: 'Review deleted.' });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc   Get admin activity logs
+// @route  GET /api/v1/admin/activities
+exports.getActivityLogs = async (req, res, next) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 50;
+        const skip = (page - 1) * limit;
+        const { action, userId, startDate, endDate } = req.query;
+
+        let query = {};
+
+        if (action && action !== 'all') {
+            query.action = action;
+        }
+
+        if (userId) {
+            query.user = userId;
+        }
+
+        if (startDate && endDate) {
+            query.createdAt = {
+                $gte: new Date(startDate),
+                $lte: new Date(endDate)
+            };
+        }
+
+        const activities = await ActivityLog.find(query)
+            .populate('user', 'name email avatar role')
+            .sort('-createdAt')
+            .skip(skip)
+            .limit(limit);
+
+        const total = await ActivityLog.countDocuments(query);
+
+        // Get activity stats
+        const stats = await ActivityLog.aggregate([
+            { $match: query },
+            {
+                $group: {
+                    _id: '$action',
+                    count: { $sum: 1 }
+                }
+            },
+            { $sort: { count: -1 } }
+        ]);
+
+        res.status(200).json({
+            success: true,
+            activities,
+            total,
+            totalPages: Math.ceil(total / limit),
+            currentPage: page,
+            stats
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc   Get login/logout statistics
+// @route  GET /api/v1/admin/login-stats
+exports.getLoginStats = async (req, res, next) => {
+    try {
+        const { period } = req.query;
+
+        const now = new Date();
+        let query = {
+            action: { $in: ['login', 'logout'] }
+        };
+
+        // Apply time filter
+        if (period) {
+            switch (period) {
+                case 'today':
+                    query.createdAt = {
+                        $gte: new Date(now.setHours(0, 0, 0, 0))
+                    };
+                    break;
+                case 'week':
+                    const weekAgo = new Date(now.setDate(now.getDate() - 7));
+                    query.createdAt = { $gte: weekAgo };
+                    break;
+                case 'month':
+                    const monthAgo = new Date(now.setMonth(now.getMonth() - 1));
+                    query.createdAt = { $gte: monthAgo };
+                    break;
+            }
+        }
+
+        // Get login/logout counts
+        const stats = await ActivityLog.aggregate([
+            { $match: query },
+            {
+                $group: {
+                    _id: {
+                        action: '$action',
+                        user: '$user'
+                    },
+                    count: { $sum: 1 },
+                    lastActivity: { $max: '$createdAt' }
+                }
+            },
+            {
+                $lookup: {
+                    from: 'users',
+                    localField: '_id.user',
+                    foreignField: '_id',
+                    as: 'userInfo'
+                }
+            },
+            {
+                $unwind: '$userInfo'
+            },
+            {
+                $project: {
+                    action: '$_id.action',
+                    user: {
+                        _id: '$userInfo._id',
+                        name: '$userInfo.name',
+                        email: '$userInfo.email',
+                        role: '$userInfo.role'
+                    },
+                    count: 1,
+                    lastActivity: 1
+                }
+            },
+            { $sort: { lastActivity: -1 } }
+        ]);
+
+        const totalLogins = await ActivityLog.countDocuments({ ...query, action: 'login' });
+        const totalLogouts = await ActivityLog.countDocuments({ ...query, action: 'logout' });
+
+        res.status(200).json({
+            success: true,
+            stats,
+            summary: {
+                totalLogins,
+                totalLogouts
+            }
+        });
     } catch (error) {
         next(error);
     }

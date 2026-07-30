@@ -1,28 +1,54 @@
 const nodemailer = require('nodemailer');
 
 const createTransporter = () => {
-  return nodemailer.createTransporter({
-    host: process.env.SMTP_HOST,
-    port: parseInt(process.env.SMTP_PORT) || 587,
-    secure: process.env.SMTP_PORT == 465,
-    auth: {
-      user: process.env.SMTP_EMAIL,
-      pass: process.env.SMTP_PASSWORD,
-    },
-  });
+  try {
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: parseInt(process.env.SMTP_PORT) || 587,
+      secure: process.env.SMTP_PORT == 465,
+      auth: {
+        user: process.env.SMTP_EMAIL,
+        pass: process.env.SMTP_PASSWORD,
+      },
+      logger: false,
+      debug: false
+    });
+    return transporter;
+  } catch (err) {
+    console.error('Transporter creation error:', err.message);
+    return null;
+  }
 };
 
 const sendEmail = async ({ to, subject, html, text }) => {
-  const transporter = createTransporter();
-  const mailOptions = {
-    from: `"${process.env.FROM_NAME}" <${process.env.FROM_EMAIL}>`,
-    to,
-    subject,
-    html,
-    text,
-  };
-  const info = await transporter.sendMail(mailOptions);
-  return info;
+  try {
+    if (!process.env.SMTP_EMAIL || !process.env.SMTP_PASSWORD) {
+      console.error('Email credentials not configured in .env');
+      return { success: false, error: 'Email not configured' };
+    }
+
+    const transporter = createTransporter();
+    if (!transporter) {
+      console.error('Failed to create email transporter');
+      return { success: false, error: 'Transporter creation failed' };
+    }
+
+    const mailOptions = {
+      from: `"${process.env.FROM_NAME || 'LEARNIX'}" <${process.env.FROM_EMAIL}>`,
+      to,
+      subject,
+      html: html || text,
+      text: text || html,
+    };
+
+    console.log('[EMAIL] Sending to:', to, 'Subject:', subject);
+    const info = await transporter.sendMail(mailOptions);
+    console.log('[EMAIL] Sent successfully:', info.messageId);
+    return { success: true, info };
+  } catch (error) {
+    console.error('[EMAIL ERROR]:', error.message);
+    return { success: false, error: error.message };
+  }
 };
 
 const sendWelcomeEmail = async (user) => {
@@ -114,21 +140,56 @@ const sendOTPEmail = async (user, otp) => {
 };
 
 const sendPurchaseConfirmationEmail = async (user, order) => {
+  const courseTitles = order.courses.map(c => c.course?.title || 'Course').join(', ');
+
   await sendEmail({
     to: user.email,
-    subject: `Order Confirmed - ${order.invoiceNumber}`,
+    subject: `Order Confirmed - ${order._id}`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 40px; text-align: center; border-radius: 10px 10px 0 0;">
           <h1 style="color: white; margin: 0;">✅ Order Confirmed!</h1>
         </div>
         <div style="background: #fff; padding: 40px; border-radius: 0 0 10px 10px;">
-          <p style="color: #666;">Hi ${user.name}, your purchase was successful!</p>
-          <p style="color: #666;"><strong>Invoice:</strong> ${order.invoiceNumber}</p>
-          <p style="color: #666;"><strong>Amount Paid:</strong> $${order.finalAmount}</p>
-          <a href="${process.env.CLIENT_URL}/dashboard/my-learning" style="display: inline-block; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; padding: 12px 30px; border-radius: 6px; text-decoration: none; margin-top: 10px;">
+          <p style="color: #666; font-size: 16px;">Hi ${user.name},</p>
+          <p style="color: #666; line-height: 1.8;">Your purchase was successful!</p>
+          <p style="color: #666;"><strong>Courses:</strong> ${courseTitles}</p>
+          <p style="color: #666;"><strong>Amount Paid:</strong> $${order.finalAmount || order.totalAmount}</p>
+          <a href="${process.env.CLIENT_URL}/dashboard/my-learning" style="display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 12px 30px; border-radius: 6px; text-decoration: none; margin-top: 20px; font-weight: bold;">
             Start Learning
           </a>
+          <p style="color: #999; font-size: 12px; margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;">
+            Questions? Contact us at support@learnix.com
+          </p>
+        </div>
+      </div>
+    `,
+  });
+};
+
+const sendEnrollmentEmail = async (user, course, courseLink) => {
+  await sendEmail({
+    to: user.email,
+    subject: `Welcome to ${course.title}!`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 40px; text-align: center; border-radius: 10px 10px 0 0;">
+          <h1 style="color: white; margin: 0;">🎉 Enrollment Successful!</h1>
+        </div>
+        <div style="background: #fff; padding: 40px; border-radius: 0 0 10px 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+          <p style="color: #666; font-size: 16px;">Hi ${user.name},</p>
+          <p style="color: #666; line-height: 1.8;">
+            Welcome! You've been successfully enrolled in <strong>${course.title}</strong>${course.instructor?.name ? ` by ${course.instructor.name}` : ''}.
+          </p>
+          <p style="color: #666; line-height: 1.8;">
+            You can now access all course content and start learning immediately.
+          </p>
+          <a href="${courseLink}" style="display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 12px 30px; border-radius: 6px; text-decoration: none; margin-top: 20px; font-weight: bold;">
+            Start Learning Now
+          </a>
+          <p style="color: #999; font-size: 12px; margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;">
+            If you have any questions, contact us at support@learnix.com
+          </p>
         </div>
       </div>
     `,
@@ -142,4 +203,5 @@ module.exports = {
   sendPasswordResetEmail,
   sendOTPEmail,
   sendPurchaseConfirmationEmail,
+  sendEnrollmentEmail,
 };

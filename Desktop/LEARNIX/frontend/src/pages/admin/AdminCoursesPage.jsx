@@ -86,6 +86,19 @@ export default function AdminCoursesPage() {
         }
     };
 
+    const handleTogglePublish = async (id, currentlyPublished) => {
+        const action = currentlyPublished ? 'delist' : 'list';
+        if (!window.confirm(`Are you sure you want to ${action} this course?`)) return;
+
+        try {
+            await api.put(`/admin/courses/${id}/toggle-publish`);
+            toast.success(`Course ${currentlyPublished ? 'delisted' : 'listed'} successfully!`);
+            fetchCourses();
+        } catch (err) {
+            toast.error(err.response?.data?.message || `Failed to ${action} course`);
+        }
+    };
+
     const handleReject = async () => {
         try {
             await api.put(`/admin/courses/${rejectModal.courseId}/approve`, {
@@ -301,6 +314,17 @@ export default function AdminCoursesPage() {
                                                             <XCircle className="w-4 h-4" />
                                                         </button>
                                                     </>
+                                                )}
+                                                {(course.status === 'published' || course.status === 'unpublished') && (
+                                                    <button
+                                                        onClick={() => handleTogglePublish(course._id, course.isPublished)}
+                                                        title={course.isPublished ? 'Delist Course' : 'List Course'}
+                                                        className={`p-1.5 rounded-lg ${course.isPublished
+                                                            ? 'hover:bg-orange-50 dark:hover:bg-orange-950/30 text-orange-600'
+                                                            : 'hover:bg-green-50 dark:hover:bg-green-950/30 text-green-600'}`}
+                                                    >
+                                                        {course.isPublished ? <Lock className="w-4 h-4" /> : <Globe className="w-4 h-4" />}
+                                                    </button>
                                                 )}
                                                 <button
                                                     onClick={() => navigate(`/courses/${course.slug}`)}

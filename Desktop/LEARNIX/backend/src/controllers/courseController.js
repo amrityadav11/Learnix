@@ -302,3 +302,210 @@ exports.duplicateCourse = async (req, res, next) => {
         next(error);
     }
 };
+
+// @desc   Add module to course
+// @route  POST /api/v1/courses/:id/modules
+exports.addModule = async (req, res, next) => {
+    try {
+        const course = await Course.findById(req.params.id);
+        if (!course) return next(new ErrorResponse('Course not found.', 404));
+
+        if (course.instructor.toString() !== req.user.id && req.user.role !== 'admin') {
+            return next(new ErrorResponse('Not authorized.', 403));
+        }
+
+        const { title, description, order } = req.body;
+        course.modules.push({ title, description, order: order || course.modules.length, lessons: [] });
+        course.totalModules = course.modules.length;
+        await course.save();
+
+        res.status(201).json({ success: true, message: 'Module added successfully.', course });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc   Update module
+// @route  PUT /api/v1/courses/:id/modules/:moduleId
+exports.updateModule = async (req, res, next) => {
+    try {
+        const course = await Course.findById(req.params.id);
+        if (!course) return next(new ErrorResponse('Course not found.', 404));
+
+        if (course.instructor.toString() !== req.user.id && req.user.role !== 'admin') {
+            return next(new ErrorResponse('Not authorized.', 403));
+        }
+
+        const module = course.modules.id(req.params.moduleId);
+        if (!module) return next(new ErrorResponse('Module not found.', 404));
+
+        const { title, description, order } = req.body;
+        if (title) module.title = title;
+        if (description) module.description = description;
+        if (order !== undefined) module.order = order;
+
+        await course.save();
+        res.status(200).json({ success: true, message: 'Module updated.', course });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc   Delete module
+// @route  DELETE /api/v1/courses/:id/modules/:moduleId
+exports.deleteModule = async (req, res, next) => {
+    try {
+        const course = await Course.findById(req.params.id);
+        if (!course) return next(new ErrorResponse('Course not found.', 404));
+
+        if (course.instructor.toString() !== req.user.id && req.user.role !== 'admin') {
+            return next(new ErrorResponse('Not authorized.', 403));
+        }
+
+        course.modules.pull(req.params.moduleId);
+        course.totalModules = course.modules.length;
+        await course.save();
+
+        res.status(200).json({ success: true, message: 'Module deleted.', course });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc   Add lesson to module
+// @route  POST /api/v1/courses/:id/modules/:moduleId/lessons
+exports.addLesson = async (req, res, next) => {
+    try {
+        const course = await Course.findById(req.params.id);
+        if (!course) return next(new ErrorResponse('Course not found.', 404));
+
+        if (course.instructor.toString() !== req.user.id && req.user.role !== 'admin') {
+            return next(new ErrorResponse('Not authorized.', 403));
+        }
+
+        const module = course.modules.id(req.params.moduleId);
+        if (!module) return next(new ErrorResponse('Module not found.', 404));
+
+        const { title, description, type, duration, content, isPreview, isFree, order } = req.body;
+        module.lessons.push({
+            title,
+            description,
+            type: type || 'video',
+            duration: duration || 0,
+            content,
+            isPreview: isPreview || false,
+            isFree: isFree || false,
+            order: order !== undefined ? order : module.lessons.length
+        });
+
+        // Update totals
+        course.totalLessons = course.modules.reduce((sum, mod) => sum + mod.lessons.length, 0);
+        course.duration = course.modules.reduce((sum, mod) =>
+            sum + mod.lessons.reduce((lSum, lesson) => lSum + (lesson.duration || 0), 0), 0
+        );
+
+        await course.save();
+        res.status(201).json({ success: true, message: 'Lesson added successfully.', course });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc   Update lesson
+// @route  PUT /api/v1/courses/:id/modules/:moduleId/lessons/:lessonId
+exports.updateLesson = async (req, res, next) => {
+    try {
+        const course = await Course.findById(req.params.id);
+        if (!course) return next(new ErrorResponse('Course not found.', 404));
+
+        if (course.instructor.toString() !== req.user.id && req.user.role !== 'admin') {
+            return next(new ErrorResponse('Not authorized.', 403));
+        }
+
+        const module = course.modules.id(req.params.moduleId);
+        if (!module) return next(new ErrorResponse('Module not found.', 404));
+
+        const lesson = module.lessons.id(req.params.lessonId);
+        if (!lesson) return next(new ErrorResponse('Lesson not found.', 404));
+
+        const allowedFields = ['title', 'description', 'type', 'duration', 'content', 'videoUrl', 'pdfUrl', 'externalLink', 'isPreview', 'isFree', 'order'];
+        allowedFields.forEach(field => {
+            if (req.body[field] !== undefined) {
+                lesson[field] = req.body[field];
+            }
+        });
+
+        // Update course duration
+        course.duration = course.modules.reduce((sum, mod) =>
+            sum + mod.lessons.reduce((lSum, l) => lSum + (l.duration || 0), 0), 0
+        );
+
+        await course.save();
+        res.status(200).json({ success: true, message: 'Lesson updated.', course });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc   Delete lesson
+// @route  DELETE /api/v1/courses/:id/modules/:moduleId/lessons/:lessonId
+exports.deleteLesson = async (req, res, next) => {
+    try {
+        const course = await Course.findById(req.params.id);
+        if (!course) return next(new ErrorResponse('Course not found.', 404));
+
+        if (course.instructor.toString() !== req.user.id && req.user.role !== 'admin') {
+            return next(new ErrorResponse('Not authorized.', 403));
+        }
+
+        const module = course.modules.id(req.params.moduleId);
+        if (!module) return next(new ErrorResponse('Module not found.', 404));
+
+        const lesson = module.lessons.id(req.params.lessonId);
+        if (!lesson) return next(new ErrorResponse('Lesson not found.', 404));
+
+        // Delete video from cloudinary if exists
+        if (lesson.videoPublicId) {
+            await deleteFromCloudinary(lesson.videoPublicId, 'video');
+        }
+
+        module.lessons.pull(req.params.lessonId);
+
+        // Update totals
+        course.totalLessons = course.modules.reduce((sum, mod) => sum + mod.lessons.length, 0);
+        course.duration = course.modules.reduce((sum, mod) =>
+            sum + mod.lessons.reduce((lSum, l) => lSum + (l.duration || 0), 0), 0
+        );
+
+        await course.save();
+        res.status(200).json({ success: true, message: 'Lesson deleted.', course });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc   Attach quiz to lesson
+// @route  PUT /api/v1/courses/:id/modules/:moduleId/lessons/:lessonId/quiz
+exports.attachQuizToLesson = async (req, res, next) => {
+    try {
+        const course = await Course.findById(req.params.id);
+        if (!course) return next(new ErrorResponse('Course not found.', 404));
+
+        if (course.instructor.toString() !== req.user.id && req.user.role !== 'admin') {
+            return next(new ErrorResponse('Not authorized.', 403));
+        }
+
+        const module = course.modules.id(req.params.moduleId);
+        if (!module) return next(new ErrorResponse('Module not found.', 404));
+
+        const lesson = module.lessons.id(req.params.lessonId);
+        if (!lesson) return next(new ErrorResponse('Lesson not found.', 404));
+
+        lesson.quiz = req.body.quizId;
+        await course.save();
+
+        res.status(200).json({ success: true, message: 'Quiz attached to lesson.', course });
+    } catch (error) {
+        next(error);
+    }
+};

@@ -2,9 +2,9 @@ const express = require('express');
 const router = express.Router();
 const {
     getDashboardStats, getUsers, updateUser, deleteUser,
-    getAdminCourses, approveCourse, createCategory, deleteCategory,
-    getAdminOrders, createCoupon, getSettings, updateSettings,
-    sendAnnouncement, deleteReview,
+    getAdminCourses, approveCourse, toggleCoursePublish, createCategory, deleteCategory,
+    getAdminOrders, downloadOrdersReport, createCoupon, getSettings, updateSettings,
+    sendAnnouncement, deleteReview, getActivityLogs, getLoginStats
 } = require('../controllers/adminController');
 const { protect, authorize } = require('../middlewares/auth');
 
@@ -20,6 +20,7 @@ router.delete('/users/:id', deleteUser);
 // Courses
 router.get('/courses', getAdminCourses);
 router.put('/courses/:id/approve', approveCourse);
+router.put('/courses/:id/toggle-publish', toggleCoursePublish);
 
 // Categories
 router.post('/categories', createCategory);
@@ -27,6 +28,7 @@ router.delete('/categories/:id', deleteCategory);
 
 // Orders
 router.get('/orders', getAdminOrders);
+router.get('/orders/download', downloadOrdersReport);
 
 // Coupons
 router.post('/coupons', createCoupon);
@@ -40,5 +42,9 @@ router.post('/announce', sendAnnouncement);
 
 // Reviews
 router.delete('/reviews/:id', deleteReview);
+
+// Activity Logs
+router.get('/activities', getActivityLogs);
+router.get('/login-stats', getLoginStats);
 
 module.exports = router;

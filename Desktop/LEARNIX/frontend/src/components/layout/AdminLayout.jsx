@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useState } from 'react';
 import {
     LayoutDashboard, Users, BookOpen, ShoppingBag, Tag, Ticket,
-    FileText, Settings, LogOut, Menu, X, GraduationCap, Star, ChevronRight
+    FileText, Settings, LogOut, Menu, X, GraduationCap, ChevronRight, Activity
 } from 'lucide-react';
 import { logoutUser } from '../../redux/slices/authSlice';
 import ThemeToggle from '../common/ThemeToggle';
@@ -14,10 +14,10 @@ const navItems = [
     { to: '/admin/users', icon: Users, label: 'Users' },
     { to: '/admin/courses', icon: BookOpen, label: 'Courses' },
     { to: '/admin/orders', icon: ShoppingBag, label: 'Orders' },
+    { to: '/admin/activities', icon: Activity, label: 'Activity Logs' },
     { to: '/admin/categories', icon: Tag, label: 'Categories' },
     { to: '/admin/coupons', icon: Ticket, label: 'Coupons' },
     { to: '/admin/blogs', icon: FileText, label: 'Blogs' },
-    { to: '/admin/reviews', icon: Star, label: 'Reviews' },
     { to: '/admin/settings', icon: Settings, label: 'Settings' },
 ];
 

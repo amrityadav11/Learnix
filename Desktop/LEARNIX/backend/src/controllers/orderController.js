@@ -8,7 +8,7 @@ const Coupon = require('../models/Coupon');
 const Progress = require('../models/Progress');
 const Notification = require('../models/Notification');
 const ErrorResponse = require('../utils/errorResponse');
-const { sendPurchaseConfirmationEmail } = require('../utils/email');
+const { sendPurchaseConfirmationEmail, sendEnrollmentEmail } = require('../utils/email');
 
 const razorpay = new Razorpay({
     key_id: process.env.RAZORPAY_KEY_ID,
@@ -38,6 +38,7 @@ const enrollUserInCourses = async (order) => {
         );
     }
     await user.save();
+
     // Send notification
     await Notification.create({
         recipient: order.user,
@@ -46,11 +47,25 @@ const enrollUserInCourses = async (order) => {
         message: `You have been enrolled in ${order.courses.length} course(s).`,
         link: '/dashboard/my-learning',
     });
-    // Send email
+
+    // Send email confirmation
     try {
         await sendPurchaseConfirmationEmail(user, order);
+        console.log('[PURCHASE CONFIRMATION] Email sent to:', user.email);
     } catch (err) {
-        console.error('Purchase email failed:', err.message);
+        console.error('[PURCHASE EMAIL ERROR]:', err.message);
+    }
+
+    // Send enrollment emails for each course
+    try {
+        for (const item of order.courses) {
+            const course = await Course.findById(item.course).populate('instructor', 'name');
+            const courseLink = `${process.env.CLIENT_URL}/learn/${item.course}`;
+            await sendEnrollmentEmail(user, course, courseLink);
+            console.log('[ENROLLMENT] Email sent to:', user.email, 'for course:', course.title);
+        }
+    } catch (err) {
+        console.error('[ENROLLMENT EMAIL ERROR]:', err.message);
     }
 };
 

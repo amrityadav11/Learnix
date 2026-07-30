@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const User = require('../models/User');
+const ActivityLog = require('../models/ActivityLog');
 const ErrorResponse = require('../utils/errorResponse');
 const { sendTokenResponse } = require('../utils/jwt');
 const {
@@ -64,6 +65,23 @@ exports.login = async (req, res, next) => {
         user.lastActive = Date.now();
         await user.save({ validateBeforeSave: false });
 
+        // Log login activity
+        try {
+            const ActivityLog = require('../models/ActivityLog');
+            await ActivityLog.create({
+                user: user._id,
+                action: 'login',
+                actionDescription: `${user.name} logged in successfully`,
+                targetModel: 'User',
+                targetId: user._id,
+                ipAddress: req.ip || req.connection?.remoteAddress || 'Unknown',
+                userAgent: req.get('user-agent') || 'Unknown'
+            });
+            console.log('[LOGIN LOG] Created for user:', user.email);
+        } catch (err) {
+            console.error('[LOGIN LOG ERROR]:', err.message);
+        }
+
         sendTokenResponse(user, 200, res, 'Login successful!');
     } catch (error) {
         next(error);
@@ -73,8 +91,31 @@ exports.login = async (req, res, next) => {
 // @desc   Logout user
 // @route  POST /api/v1/auth/logout
 exports.logout = async (req, res, next) => {
-    res.cookie('token', 'none', { expires: new Date(Date.now() + 10 * 1000), httpOnly: true });
-    res.status(200).json({ success: true, message: 'Logged out successfully.' });
+    try {
+        // Log logout activity if user is authenticated
+        if (req.user) {
+            try {
+                const ActivityLog = require('../models/ActivityLog');
+                await ActivityLog.create({
+                    user: req.user.id,
+                    action: 'logout',
+                    actionDescription: `User logged out`,
+                    targetModel: 'User',
+                    targetId: req.user.id,
+                    ipAddress: req.ip || req.connection?.remoteAddress || 'Unknown',
+                    userAgent: req.get('user-agent') || 'Unknown'
+                });
+                console.log('[LOGOUT LOG] Created for user:', req.user.id);
+            } catch (err) {
+                console.error('[LOGOUT LOG ERROR]:', err.message);
+            }
+        }
+
+        res.cookie('token', 'none', { expires: new Date(Date.now() + 10 * 1000), httpOnly: true });
+        res.status(200).json({ success: true, message: 'Logged out successfully.' });
+    } catch (error) {
+        next(error);
+    }
 };
 
 // @desc   Get current user

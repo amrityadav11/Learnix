@@ -56,6 +56,7 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminUsersPage from './pages/admin/AdminUsersPage';
 import AdminCoursesPage from './pages/admin/AdminCoursesPage';
 import AdminOrdersPage from './pages/admin/AdminOrdersPage';
+import AdminActivityPage from './pages/admin/AdminActivityPage';
 import AdminCategoriesPage from './pages/admin/AdminCategoriesPage';
 import AdminCouponsPage from './pages/admin/AdminCouponsPage';
 import AdminBlogsPage from './pages/admin/AdminBlogsPage';
@@ -155,6 +156,7 @@ export default function App() {
                 <Route path="users" element={<AdminUsersPage />} />
                 <Route path="courses" element={<AdminCoursesPage />} />
                 <Route path="orders" element={<AdminOrdersPage />} />
+                <Route path="activities" element={<AdminActivityPage />} />
                 <Route path="categories" element={<AdminCategoriesPage />} />
                 <Route path="coupons" element={<AdminCouponsPage />} />
                 <Route path="blogs" element={<AdminBlogsPage />} />
