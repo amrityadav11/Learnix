@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { motion } from 'framer-motion';
 import { Upload, FileVideo, Trash2, Check, AlertCircle, Loader } from 'lucide-react';
-import axios from 'axios';
+import api from '../../api/axios';
 
 export default function InstructorUploadVideosPage() {
     const navigate = useNavigate();
@@ -22,9 +22,7 @@ export default function InstructorUploadVideosPage() {
     useEffect(() => {
         const fetchCourses = async () => {
             try {
-                const res = await axios.get('/api/v1/courses/instructor', {
-                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-                });
+                const res = await api.get('/courses/instructor');
                 setCourses(res.data.data);
             } catch (err) {
                 setError('Failed to load courses');
@@ -68,22 +66,14 @@ export default function InstructorUploadVideosPage() {
         formData.append('video', file);
 
         try {
-            const res = await axios.post(
-                `/api/v1/instructor/courses/${selectedCourse}/modules/${selectedModule}/lessons/${lessonId}/video`,
-                formData,
-                {
-                    headers: {
-                        Authorization: `Bearer ${localStorage.getItem('token')}`,
-                        'Content-Type': 'multipart/form-data'
-                    }
-                }
+            const res = await api.post(
+                `/instructor/courses/${selectedCourse}/modules/${selectedModule}/lessons/${lessonId}/video`,
+                formData
             );
 
             setSuccessMessage(`Video uploaded successfully! Duration: ${res.data.data.duration}s`);
             // Refresh course data
-            const courseRes = await axios.get(`/api/v1/courses/${selectedCourse}`, {
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-            });
+            const courseRes = await api.get(`/courses/${selectedCourse}`);
             setCourses(prev => prev.map(c => c._id === selectedCourse ? courseRes.data.data : c));
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to upload video');
@@ -97,17 +87,12 @@ export default function InstructorUploadVideosPage() {
         if (!window.confirm('Are you sure you want to delete this video?')) return;
 
         try {
-            await axios.delete(
-                `/api/v1/instructor/courses/${selectedCourse}/modules/${selectedModule}/lessons/${lessonId}/video`,
-                {
-                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-                }
+            await api.delete(
+                `/instructor/courses/${selectedCourse}/modules/${selectedModule}/lessons/${lessonId}/video`
             );
             setSuccessMessage('Video deleted successfully');
             // Refresh course data
-            const courseRes = await axios.get(`/api/v1/courses/${selectedCourse}`, {
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-            });
+            const courseRes = await api.get(`/courses/${selectedCourse}`);
             setCourses(prev => prev.map(c => c._id === selectedCourse ? courseRes.data.data : c));
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to delete video');
@@ -164,8 +149,8 @@ export default function InstructorUploadVideosPage() {
                                         key={module._id}
                                         onClick={() => setSelectedModule(module._id)}
                                         className={`p-4 rounded-lg border-2 transition-all text-left ${selectedModule === module._id
-                                                ? 'border-primary bg-primary/10'
-                                                : 'border-muted hover:border-primary'
+                                            ? 'border-primary bg-primary/10'
+                                            : 'border-muted hover:border-primary'
                                             }`}
                                     >
                                         <h3 className="font-bold">{module.title}</h3>

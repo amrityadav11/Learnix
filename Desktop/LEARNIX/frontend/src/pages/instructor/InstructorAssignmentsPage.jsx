@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Edit2, Trash2, Eye, CheckCircle, Clock, AlertCircle, Loader } from 'lucide-react';
-import axios from 'axios';
+import api from '../../api/axios';
 
 export default function InstructorAssignmentsPage() {
     const [assignments, setAssignments] = useState([]);
@@ -24,12 +24,8 @@ export default function InstructorAssignmentsPage() {
         const fetchData = async () => {
             try {
                 const [assignRes, courseRes] = await Promise.all([
-                    axios.get('/api/v1/instructor/assignments', {
-                        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-                    }),
-                    axios.get('/api/v1/courses/instructor', {
-                        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-                    })
+                    api.get('/instructor/assignments'),
+                    api.get('/courses/instructor')
                 ]);
                 setAssignments(assignRes.data.data);
                 setCourses(courseRes.data.data);
@@ -49,18 +45,12 @@ export default function InstructorAssignmentsPage() {
 
         try {
             if (editingId) {
-                await axios.put(`/api/v1/instructor/assignments/${editingId}`, formData, {
-                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-                });
+                await api.put(`/instructor/assignments/${editingId}`, formData);
             } else {
-                await axios.post('/api/v1/instructor/assignments', formData, {
-                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-                });
+                await api.post('/instructor/assignments', formData);
             }
             // Refresh assignments
-            const res = await axios.get('/api/v1/instructor/assignments', {
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-            });
+            const res = await api.get('/instructor/assignments');
             setAssignments(res.data.data);
             setFormData({ courseId: '', title: '', description: '', dueDate: '', maxScore: 100 });
             setShowForm(false);
@@ -75,9 +65,7 @@ export default function InstructorAssignmentsPage() {
     const handleDelete = async (id) => {
         if (!window.confirm('Are you sure you want to delete this assignment?')) return;
         try {
-            await axios.delete(`/api/v1/instructor/assignments/${id}`, {
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-            });
+            await api.delete(`/instructor/assignments/${id}`);
             setAssignments(assignments.filter(a => a._id !== id));
         } catch (err) {
             setError('Failed to delete assignment');

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Star, Check, X, AlertCircle, Loader, MessageSquare } from 'lucide-react';
-import axios from 'axios';
+import api from '../../api/axios';
 
 export default function InstructorReviewsPage() {
     const [reviews, setReviews] = useState([]);
@@ -16,9 +16,7 @@ export default function InstructorReviewsPage() {
     useEffect(() => {
         const fetchReviews = async () => {
             try {
-                const res = await axios.get(`/api/v1/instructor/reviews?status=${filter}`, {
-                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-                });
+                const res = await api.get(`/instructor/reviews?status=${filter}`);
                 setReviews(res.data.data);
                 setStats(res.data.stats);
             } catch (err) {
@@ -32,10 +30,9 @@ export default function InstructorReviewsPage() {
 
     const handleApprove = async (reviewId) => {
         try {
-            await axios.put(
-                `/api/v1/instructor/reviews/${reviewId}`,
-                { isApproved: true },
-                { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+            await api.put(
+                `/instructor/reviews/${reviewId}`,
+                { isApproved: true }
             );
             setReviews(reviews.map(r => r._id === reviewId ? { ...r, isApproved: true } : r));
         } catch (err) {
@@ -45,10 +42,9 @@ export default function InstructorReviewsPage() {
 
     const handleReject = async (reviewId) => {
         try {
-            await axios.put(
-                `/api/v1/instructor/reviews/${reviewId}`,
-                { isApproved: false },
-                { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+            await api.put(
+                `/instructor/reviews/${reviewId}`,
+                { isApproved: false }
             );
             setReviews(reviews.map(r => r._id === reviewId ? { ...r, isApproved: false } : r));
         } catch (err) {
@@ -59,10 +55,9 @@ export default function InstructorReviewsPage() {
     const handleReply = async (reviewId) => {
         if (!replyText.trim()) return;
         try {
-            await axios.put(
-                `/api/v1/instructor/reviews/${reviewId}`,
-                { replyText },
-                { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+            await api.put(
+                `/instructor/reviews/${reviewId}`,
+                { replyText }
             );
             setReviews(reviews.map(r =>
                 r._id === reviewId
@@ -119,8 +114,8 @@ export default function InstructorReviewsPage() {
                         key={f}
                         onClick={() => setFilter(f)}
                         className={`px-4 py-2 rounded-lg font-medium transition-all ${filter === f
-                                ? 'bg-primary text-primary-foreground'
-                                : 'bg-muted hover:bg-muted/80'
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-muted hover:bg-muted/80'
                             }`}
                     >
                         {f.charAt(0).toUpperCase() + f.slice(1)}

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Edit2, Trash2, HelpCircle, AlertCircle, Loader } from 'lucide-react';
-import axios from 'axios';
+import api from '../../api/axios';
 
 export default function InstructorQuizzesPage() {
     const [quizzes, setQuizzes] = useState([]);
@@ -24,12 +24,8 @@ export default function InstructorQuizzesPage() {
         const fetchData = async () => {
             try {
                 const [quizRes, courseRes] = await Promise.all([
-                    axios.get('/api/v1/instructor/quizzes', {
-                        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-                    }),
-                    axios.get('/api/v1/courses/instructor', {
-                        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-                    })
+                    api.get('/instructor/quizzes'),
+                    api.get('/courses/instructor')
                 ]);
                 setQuizzes(quizRes.data.data);
                 setCourses(courseRes.data.data);
@@ -49,18 +45,12 @@ export default function InstructorQuizzesPage() {
 
         try {
             if (editingId) {
-                await axios.put(`/api/v1/instructor/quizzes/${editingId}`, formData, {
-                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-                });
+                await api.put(`/instructor/quizzes/${editingId}`, formData);
             } else {
-                await axios.post('/api/v1/instructor/quizzes', formData, {
-                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-                });
+                await api.post('/instructor/quizzes', formData);
             }
             // Refresh quizzes
-            const res = await axios.get('/api/v1/instructor/quizzes', {
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-            });
+            const res = await api.get('/instructor/quizzes');
             setQuizzes(res.data.data);
             setFormData({ courseId: '', title: '', description: '', timeLimit: 60, passingScore: 60 });
             setShowForm(false);
@@ -75,9 +65,7 @@ export default function InstructorQuizzesPage() {
     const handleDelete = async (id) => {
         if (!window.confirm('Are you sure you want to delete this quiz?')) return;
         try {
-            await axios.delete(`/api/v1/instructor/quizzes/${id}`, {
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-            });
+            await api.delete(`/instructor/quizzes/${id}`);
             setQuizzes(quizzes.filter(q => q._id !== id));
         } catch (err) {
             setError('Failed to delete quiz');

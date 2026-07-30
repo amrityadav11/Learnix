@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { DollarSign, Wallet, CreditCard, AlertCircle, Loader, Check } from 'lucide-react';
-import axios from 'axios';
+import api from '../../api/axios';
 
 export default function InstructorWithdrawPage() {
     const [withdrawalData, setWithdrawalData] = useState(null);
@@ -22,9 +22,7 @@ export default function InstructorWithdrawPage() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const res = await axios.get('/api/v1/instructor/withdrawals', {
-                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-                });
+                const res = await api.get('/instructor/withdrawals');
                 setWithdrawalData(res.data.data);
                 if (res.data.data.bankDetails) {
                     setBankDetails(res.data.data.bankDetails);
@@ -54,10 +52,9 @@ export default function InstructorWithdrawPage() {
         }
 
         try {
-            const res = await axios.post(
-                '/api/v1/instructor/withdraw',
-                { amount: parseFloat(withdrawAmount) },
-                { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+            const res = await api.post(
+                '/instructor/withdraw',
+                { amount: parseFloat(withdrawAmount) }
             );
             setSuccessMessage(res.data.message);
             setWithdrawalData(prev => ({
@@ -78,9 +75,7 @@ export default function InstructorWithdrawPage() {
         setError('');
 
         try {
-            await axios.put('/api/v1/instructor/bank-details', bankDetails, {
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-            });
+            await api.put('/instructor/bank-details', bankDetails);
             setSuccessMessage('Bank details updated successfully');
             setShowBankForm(false);
             setTimeout(() => setSuccessMessage(''), 3000);

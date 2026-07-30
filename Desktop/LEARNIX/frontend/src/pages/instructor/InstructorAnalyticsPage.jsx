@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { TrendingUp, Users, DollarSign, Star, AlertCircle, Loader, BarChart3 } from 'lucide-react';
-import axios from 'axios';
+import api from '../../api/axios';
 
 export default function InstructorAnalyticsPage() {
     const [analytics, setAnalytics] = useState(null);
@@ -16,15 +16,11 @@ export default function InstructorAnalyticsPage() {
     useEffect(() => {
         const fetchAnalytics = async () => {
             try {
-                const res = await axios.get(`/api/v1/instructor/analytics?dateRange=${dateRange}`, {
-                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-                });
+                const res = await api.get(`/instructor/analytics?dateRange=${dateRange}`);
                 setAnalytics(res.data.data);
 
                 // Also fetch courses for selection
-                const courseRes = await axios.get('/api/v1/courses/instructor', {
-                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-                });
+                const courseRes = await api.get('/courses/instructor');
                 setCourses(courseRes.data.data);
             } catch (err) {
                 setError(err.response?.data?.message || 'Failed to load analytics');
@@ -40,9 +36,7 @@ export default function InstructorAnalyticsPage() {
         if (selectedCourse) {
             const fetchCourseAnalytics = async () => {
                 try {
-                    const res = await axios.get(`/api/v1/instructor/analytics/${selectedCourse}?dateRange=${dateRange}`, {
-                        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-                    });
+                    const res = await api.get(`/instructor/analytics/${selectedCourse}?dateRange=${dateRange}`);
                     setCourseAnalytics(res.data.data);
                 } catch (err) {
                     setError('Failed to load course analytics');
