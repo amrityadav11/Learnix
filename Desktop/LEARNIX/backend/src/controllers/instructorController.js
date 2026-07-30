@@ -15,7 +15,7 @@ const path = require('path');
 // @route  GET /api/v1/instructor/overview
 exports.getDashboardOverview = async (req, res, next) => {
     try {
-        const instructorId = req.user.id;
+        const instructorId = new mongoose.Types.ObjectId(req.user.id);
 
         // Get all courses
         const courses = await Course.find({ instructor: instructorId });
@@ -23,7 +23,7 @@ exports.getDashboardOverview = async (req, res, next) => {
 
         // Total students
         const totalStudents = await Course.aggregate([
-            { $match: { instructor: mongoose.Types.ObjectId(instructorId) } },
+            { $match: { instructor: instructorId } },
             { $group: { _id: null, total: { $sum: '$totalStudents' } } }
         ]);
 

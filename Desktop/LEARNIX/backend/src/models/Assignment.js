@@ -1,31 +1,34 @@
 const mongoose = require('mongoose');
 
-const submissionSchema = new mongoose.Schema(
-    {
-        student: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-        content: { type: String },
-        fileUrl: { type: String },
-        grade: { type: Number, min: 0, max: 100 },
-        feedback: { type: String },
-        status: { type: String, enum: ['pending', 'submitted', 'graded', 'returned'], default: 'pending' },
-        submittedAt: { type: Date },
-        gradedAt: { type: Date },
-    },
-    { timestamps: true }
-);
+const submissionSchema = new mongoose.Schema({
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    submittedAt: { type: Date, default: Date.now },
+    fileUrl: { type: String },
+    filePublicId: { type: String },
+    content: { type: String },
+    score: { type: Number },
+    feedback: { type: String },
+    isGraded: { type: Boolean, default: false },
+    gradedAt: { type: Date },
+}, { timestamps: true });
 
 const assignmentSchema = new mongoose.Schema(
     {
-        title: { type: String, required: true },
-        description: { type: String, required: true },
         course: { type: mongoose.Schema.Types.ObjectId, ref: 'Course', required: true },
-        lesson: { type: mongoose.Schema.Types.ObjectId },
-        instructor: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-        dueDate: { type: Date },
-        maxPoints: { type: Number, default: 100 },
+        title: { type: String, required: true },
+        description: { type: String },
         instructions: { type: String },
-        attachments: [{ name: String, url: String }],
+        dueDate: { type: Date },
+        maxScore: { type: Number, default: 100 },
+        attachments: [
+            {
+                title: String,
+                url: String,
+                publicId: String,
+            }
+        ],
         submissions: [submissionSchema],
+        createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
         isActive: { type: Boolean, default: true },
     },
     { timestamps: true }

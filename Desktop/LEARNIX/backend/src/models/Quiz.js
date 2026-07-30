@@ -2,42 +2,33 @@ const mongoose = require('mongoose');
 
 const questionSchema = new mongoose.Schema({
     question: { type: String, required: true },
-    type: { type: String, enum: ['mcq', 'true_false', 'coding'], default: 'mcq' },
-    options: [{ text: String, isCorrect: Boolean }],
+    type: { type: String, enum: ['multiple-choice', 'true-false', 'short-answer', 'essay'], default: 'multiple-choice' },
+    options: [{ type: String }],
     correctAnswer: { type: String },
-    explanation: { type: String },
     points: { type: Number, default: 1 },
-    codeTemplate: { type: String },
-    testCases: [{ input: String, expectedOutput: String }],
-});
+}, { timestamps: true });
 
 const quizSchema = new mongoose.Schema(
     {
+        course: { type: mongoose.Schema.Types.ObjectId, ref: 'Course', required: true },
         title: { type: String, required: true },
         description: { type: String },
-        course: { type: mongoose.Schema.Types.ObjectId, ref: 'Course', required: true },
-        lesson: { type: mongoose.Schema.Types.ObjectId },
+        timeLimit: { type: Number, default: 60 }, // in minutes
+        passingScore: { type: Number, default: 60 }, // percentage
         questions: [questionSchema],
-        passingScore: { type: Number, default: 70 },
-        timeLimit: { type: Number, default: 0 }, // in minutes, 0 = no limit
-        shuffleQuestions: { type: Boolean, default: false },
-        shuffleOptions: { type: Boolean, default: false },
-        maxAttempts: { type: Number, default: 3 },
-        showResults: { type: Boolean, default: true },
-        isActive: { type: Boolean, default: true },
-        results: [
+        createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+        attempts: [
             {
                 user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-                score: Number,
-                totalPoints: Number,
-                percentage: Number,
-                passed: Boolean,
-                answers: [{ questionId: mongoose.Schema.Types.ObjectId, selectedAnswer: String, isCorrect: Boolean }],
-                timeTaken: Number,
-                attemptNumber: { type: Number, default: 1 },
-                completedAt: { type: Date, default: Date.now },
-            },
+                score: { type: Number },
+                percentage: { type: Number },
+                passed: { type: Boolean },
+                answers: [{ type: String }],
+                startedAt: { type: Date },
+                completedAt: { type: Date },
+            }
         ],
+        isActive: { type: Boolean, default: true },
     },
     { timestamps: true }
 );
