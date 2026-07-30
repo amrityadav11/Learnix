@@ -7,6 +7,24 @@ const APIFeatures = require('../utils/apiFeatures');
 const { uploadToCloudinary, deleteFromCloudinary, uploadVideoToCloudinary } = require('../config/cloudinary');
 const fs = require('fs');
 
+// @desc   Get instructor's courses
+// @route  GET /api/v1/courses/instructor
+exports.getInstructorCourses = async (req, res, next) => {
+    try {
+        const courses = await Course.find({ instructor: req.user.id })
+            .populate('category', 'name slug')
+            .sort('-createdAt');
+
+        res.status(200).json({
+            success: true,
+            count: courses.length,
+            data: courses
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 // @desc   Get all courses
 // @route  GET /api/v1/courses
 exports.getCourses = async (req, res, next) => {

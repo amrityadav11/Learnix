@@ -1,13 +1,16 @@
 const express = require('express');
 const router = express.Router();
 const {
-    getCourses, getCourse, createCourse, updateCourse, deleteCourse,
+    getInstructorCourses, getCourses, getCourse, createCourse, updateCourse, deleteCourse,
     uploadThumbnail, uploadLessonVideo, getFeaturedCourses, publishCourse, duplicateCourse,
     addModule, updateModule, deleteModule, addLesson, updateLesson, deleteLesson, attachQuizToLesson
 } = require('../controllers/courseController');
 const { getReviews, createReview } = require('../controllers/reviewController');
 const { protect, authorize, optionalAuth } = require('../middlewares/auth');
 const { uploadThumbnail: uploadThumbnailMiddleware, uploadVideo } = require('../middlewares/upload');
+
+// Instructor courses - must be before /:slug route
+router.get('/instructor', protect, authorize('instructor', 'admin'), getInstructorCourses);
 
 router.get('/', optionalAuth, getCourses);
 router.get('/featured', getFeaturedCourses);

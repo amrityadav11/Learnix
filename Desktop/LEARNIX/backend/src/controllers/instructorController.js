@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Course = require('../models/Course');
 const Quiz = require('../models/Quiz');
 const Assignment = require('../models/Assignment');
