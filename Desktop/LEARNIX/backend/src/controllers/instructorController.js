@@ -15,7 +15,11 @@ const path = require('path');
 // @route  GET /api/v1/instructor/overview
 exports.getDashboardOverview = async (req, res, next) => {
     try {
-        const instructorId = new mongoose.Types.ObjectId(req.user.id);
+        if (!req.user) {
+            return next(new ErrorResponse('Not authenticated', 401));
+        }
+
+        const instructorId = req.user._id || req.user.id;
 
         // Get all courses
         const courses = await Course.find({ instructor: instructorId });

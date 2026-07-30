@@ -11,7 +11,13 @@ const fs = require('fs');
 // @route  GET /api/v1/courses/instructor
 exports.getInstructorCourses = async (req, res, next) => {
     try {
-        const courses = await Course.find({ instructor: req.user.id })
+        if (!req.user) {
+            return next(new ErrorResponse('Not authenticated', 401));
+        }
+
+        const instructorId = req.user._id || req.user.id;
+
+        const courses = await Course.find({ instructor: instructorId })
             .populate('category', 'name slug')
             .sort('-createdAt');
 
@@ -21,6 +27,7 @@ exports.getInstructorCourses = async (req, res, next) => {
             data: courses
         });
     } catch (error) {
+        console.error('[INSTRUCTOR COURSES ERROR]', error.message);
         next(error);
     }
 };
