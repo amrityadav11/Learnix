@@ -50,6 +50,12 @@ import EditCoursePage from './pages/instructor/EditCoursePage';
 import InstructorCoursesPage from './pages/instructor/InstructorCoursesPage';
 import InstructorEarningsPage from './pages/instructor/InstructorEarningsPage';
 import InstructorStudentsPage from './pages/instructor/InstructorStudentsPage';
+import InstructorUploadVideosPage from './pages/instructor/InstructorUploadVideosPage';
+import InstructorAssignmentsPage from './pages/instructor/InstructorAssignmentsPage';
+import InstructorQuizzesPage from './pages/instructor/InstructorQuizzesPage';
+import InstructorReviewsPage from './pages/instructor/InstructorReviewsPage';
+import InstructorAnalyticsPage from './pages/instructor/InstructorAnalyticsPage';
+import InstructorWithdrawPage from './pages/instructor/InstructorWithdrawPage';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -146,7 +152,13 @@ export default function App() {
                 <Route path="courses" element={<InstructorCoursesPage />} />
                 <Route path="courses/create" element={<CreateCoursePage />} />
                 <Route path="courses/:id/edit" element={<EditCoursePage />} />
+                <Route path="upload-videos" element={<InstructorUploadVideosPage />} />
+                <Route path="assignments" element={<InstructorAssignmentsPage />} />
+                <Route path="quizzes" element={<InstructorQuizzesPage />} />
+                <Route path="reviews" element={<InstructorReviewsPage />} />
+                <Route path="analytics" element={<InstructorAnalyticsPage />} />
                 <Route path="earnings" element={<InstructorEarningsPage />} />
+                <Route path="withdraw" element={<InstructorWithdrawPage />} />
                 <Route path="students" element={<InstructorStudentsPage />} />
             </Route>
 

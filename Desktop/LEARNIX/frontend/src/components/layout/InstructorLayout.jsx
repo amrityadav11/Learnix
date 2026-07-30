@@ -13,8 +13,14 @@ const navItems = [
     { to: '/instructor', icon: LayoutDashboard, label: 'Dashboard', end: true },
     { to: '/instructor/courses', icon: BookOpen, label: 'My Courses' },
     { to: '/instructor/courses/create', icon: PlusCircle, label: 'Create Course' },
+    { to: '/instructor/upload-videos', icon: BookOpen, label: 'Upload Videos' },
+    { to: '/instructor/assignments', icon: BookOpen, label: 'Assignments' },
+    { to: '/instructor/quizzes', icon: BookOpen, label: 'Quizzes' },
+    { to: '/instructor/reviews', icon: BookOpen, label: 'Reviews' },
+    { to: '/instructor/analytics', icon: BookOpen, label: 'Analytics' },
     { to: '/instructor/students', icon: Users, label: 'Students' },
     { to: '/instructor/earnings', icon: DollarSign, label: 'Earnings' },
+    { to: '/instructor/withdraw', icon: DollarSign, label: 'Withdraw' },
 ];
 
 function InstructorSidebar({ onClose }) {
