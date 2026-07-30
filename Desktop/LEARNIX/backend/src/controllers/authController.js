@@ -339,3 +339,31 @@ exports.googleCallback = async (req, res) => {
 exports.githubCallback = async (req, res) => {
     sendTokenResponse(req.user, 200, res, 'GitHub login successful!');
 };
+
+// @desc   Request instructor access
+// @route  PUT /api/v1/auth/become-instructor
+exports.becomeInstructor = async (req, res, next) => {
+    try {
+        const user = await User.findById(req.user.id);
+
+        if (user.role === 'instructor' || user.role === 'admin') {
+            return next(new ErrorResponse('You are already an instructor.', 400));
+        }
+
+        user.role = 'instructor';
+        await user.save();
+
+        res.status(200).json({
+            success: true,
+            message: 'Successfully upgraded to instructor role!',
+            user: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role
+            }
+        });
+    } catch (error) {
+        next(error);
+    }
+};

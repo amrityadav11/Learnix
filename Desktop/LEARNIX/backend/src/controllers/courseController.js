@@ -16,11 +16,13 @@ exports.getInstructorCourses = async (req, res, next) => {
         }
 
         const instructorId = req.user._id || req.user.id;
+        console.log('[GET INSTRUCTOR COURSES] User:', req.user.email, 'Role:', req.user.role, 'ID:', instructorId);
 
         const courses = await Course.find({ instructor: instructorId })
             .populate('category', 'name slug')
             .sort('-createdAt');
 
+        console.log('[GET INSTRUCTOR COURSES] Found', courses.length, 'courses');
         res.status(200).json({
             success: true,
             count: courses.length,

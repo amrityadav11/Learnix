@@ -4,7 +4,7 @@ const passport = require('../config/passport');
 const {
     register, login, logout, getMe, verifyEmail, forgotPassword, resetPassword,
     changePassword, sendOTP, verifyOTP, updateProfile, uploadAvatar, deleteAccount,
-    googleCallback, githubCallback,
+    googleCallback, githubCallback, becomeInstructor,
 } = require('../controllers/authController');
 const { protect } = require('../middlewares/auth');
 const { uploadAvatar: uploadAvatarMiddleware } = require('../middlewares/upload');
@@ -22,6 +22,7 @@ router.post('/verify-otp', verifyOTP);
 router.put('/update-profile', protect, updateProfile);
 router.put('/upload-avatar', protect, uploadAvatarMiddleware, uploadAvatar);
 router.delete('/delete-account', protect, deleteAccount);
+router.put('/become-instructor', protect, becomeInstructor);
 
 // OAuth
 router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
