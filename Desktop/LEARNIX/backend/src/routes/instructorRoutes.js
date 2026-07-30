@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { protect, authorize } = require('../middlewares/auth');
-const upload = require('../middlewares/upload');
+const { uploadVideo } = require('../middlewares/upload');
 const {
     // Dashboard
     getDashboardOverview,
@@ -39,7 +39,7 @@ router.use(protect, authorize('instructor', 'admin'));
 router.get('/overview', getDashboardOverview);
 
 // Videos
-router.post('/courses/:courseId/modules/:moduleId/lessons/:lessonId/video', upload.single('video'), uploadLessonVideo);
+router.post('/courses/:courseId/modules/:moduleId/lessons/:lessonId/video', uploadVideo, uploadLessonVideo);
 router.delete('/courses/:courseId/modules/:moduleId/lessons/:lessonId/video', deleteLessonVideo);
 
 // Assignments
