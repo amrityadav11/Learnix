@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { auth, authorize } = require('../middlewares/auth');
+const { protect, authorize } = require('../middlewares/auth');
 const upload = require('../middlewares/upload');
 const {
     // Dashboard
@@ -32,8 +32,8 @@ const {
     updateBankDetails
 } = require('../controllers/instructorController');
 
-// Protect all routes
-router.use(auth, authorize('instructor', 'admin'));
+// Protect all routes - must be authenticated and have instructor or admin role
+router.use(protect, authorize('instructor', 'admin'));
 
 // Dashboard
 router.get('/overview', getDashboardOverview);
