@@ -1,0 +1,7 @@
+node_modules/
+.git/
+uploads/
+*.log
+.env
+package-lock.json
+seed_output.txt

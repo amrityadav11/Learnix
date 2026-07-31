@@ -196,6 +196,58 @@ const sendEnrollmentEmail = async (user, course, courseLink) => {
   });
 };
 
+const sendEmployeeCredentialsEmail = async (employee, tempPassword) => {
+  const loginUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+  await sendEmail({
+    to: employee.email,
+    subject: 'Your LEARNIX Employee Account Credentials',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); padding: 40px; text-align: center; border-radius: 10px 10px 0 0;">
+          <h1 style="color: white; margin: 0;">👨‍💼 Welcome to LEARNIX Team!</h1>
+        </div>
+        <div style="background: #fff; padding: 40px; border-radius: 0 0 10px 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+          <p style="color: #666; font-size: 16px;">Hi ${employee.firstName} ${employee.lastName},</p>
+          <p style="color: #666; line-height: 1.8;">
+            Your employee account has been created in LEARNIX. Use the credentials below to log in for the first time:
+          </p>
+          
+          <div style="background: #f4f4f8; padding: 20px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #6366f1;">
+            <p style="color: #333; margin: 10px 0;"><strong>📧 Email:</strong> <code style="background: white; padding: 5px 10px; border-radius: 3px; font-family: monospace;">${employee.email}</code></p>
+            <p style="color: #333; margin: 10px 0;"><strong>🔑 Temporary Password:</strong> <code style="background: white; padding: 5px 10px; border-radius: 3px; font-family: monospace;">${tempPassword}</code></p>
+            <p style="color: #333; margin: 10px 0;"><strong>👔 Job Title:</strong> ${employee.jobTitle}</p>
+            <p style="color: #333; margin: 10px 0;"><strong>🏢 Department:</strong> ${employee.departmentName || 'Not assigned'}</p>
+            <p style="color: #333; margin: 10px 0;"><strong>📍 Employee ID:</strong> ${employee.employeeId || 'Will be generated'}</p>
+          </div>
+
+          <p style="color: #f59e0b; background: #fffbeb; padding: 15px; border-radius: 6px; border-left: 4px solid #f59e0b;">
+            <strong>⚠️ Important:</strong> For security reasons, you must change your password immediately after your first login.
+          </p>
+
+          <a href="${loginUrl}/login" style="display: inline-block; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; padding: 12px 30px; border-radius: 6px; text-decoration: none; margin-top: 20px; font-weight: bold;">
+            Login to LEARNIX
+          </a>
+
+          <div style="background: #f0f9ff; padding: 15px; border-radius: 6px; margin-top: 20px; border-left: 4px solid #0ea5e9;">
+            <p style="color: #0369a1; margin: 10px 0;"><strong>💡 Tips:</strong></p>
+            <ul style="color: #0369a1; margin: 0; padding-left: 20px;">
+              <li>Keep your login credentials secure</li>
+              <li>Change your password upon first login</li>
+              <li>Enable two-factor authentication for added security</li>
+              <li>Contact HR if you face any issues logging in</li>
+            </ul>
+          </div>
+
+          <p style="color: #999; font-size: 12px; margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px; text-align: center;">
+            If you didn't expect this email or have questions, contact your HR department.<br/>
+            This is an automated message, please do not reply directly.
+          </p>
+        </div>
+      </div>
+    `,
+  });
+};
+
 module.exports = {
   sendEmail,
   sendWelcomeEmail,
@@ -204,4 +256,5 @@ module.exports = {
   sendOTPEmail,
   sendPurchaseConfirmationEmail,
   sendEnrollmentEmail,
+  sendEmployeeCredentialsEmail,
 };

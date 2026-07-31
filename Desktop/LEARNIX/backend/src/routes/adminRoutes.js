@@ -6,6 +6,8 @@ const {
     getAdminOrders, downloadOrdersReport, createCoupon, getSettings, updateSettings,
     sendAnnouncement, deleteReview, getActivityLogs, getLoginStats
 } = require('../controllers/adminController');
+const Department = require('../models/Department');
+const Role = require('../models/Role');
 const { protect, authorize } = require('../middlewares/auth');
 
 router.use(protect, authorize('admin'));
@@ -16,6 +18,26 @@ router.get('/stats', getDashboardStats);
 router.get('/users', getUsers);
 router.put('/users/:id', updateUser);
 router.delete('/users/:id', deleteUser);
+
+// Departments
+router.get('/departments', async (req, res, next) => {
+    try {
+        const departments = await Department.find({ isActive: true });
+        res.json({ success: true, departments });
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Roles
+router.get('/roles', async (req, res, next) => {
+    try {
+        const roles = await Role.find({ isActive: true });
+        res.json({ success: true, roles });
+    } catch (error) {
+        next(error);
+    }
+});
 
 // Courses
 router.get('/courses', getAdminCourses);

@@ -60,6 +60,7 @@ import InstructorWithdrawPage from './pages/instructor/InstructorWithdrawPage';
 // Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminUsersPage from './pages/admin/AdminUsersPage';
+import AdminEmployeesPage from './pages/admin/AdminEmployeesPage';
 import AdminCoursesPage from './pages/admin/AdminCoursesPage';
 import AdminOrdersPage from './pages/admin/AdminOrdersPage';
 import AdminActivityPage from './pages/admin/AdminActivityPage';
@@ -166,6 +167,7 @@ export default function App() {
             <Route path="/admin" element={<ProtectedRoute role={['admin']}><AdminLayout /></ProtectedRoute>}>
                 <Route index element={<AdminDashboard />} />
                 <Route path="users" element={<AdminUsersPage />} />
+                <Route path="employees" element={<AdminEmployeesPage />} />
                 <Route path="courses" element={<AdminCoursesPage />} />
                 <Route path="orders" element={<AdminOrdersPage />} />
                 <Route path="activities" element={<AdminActivityPage />} />

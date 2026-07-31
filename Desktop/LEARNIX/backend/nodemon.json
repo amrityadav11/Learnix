@@ -1,0 +1,18 @@
+{
+    "watch": [
+        "src"
+    ],
+    "ext": "js",
+    "ignore": [
+        "node_modules",
+        ".git",
+        "uploads",
+        "*.log"
+    ],
+    "delay": 500,
+    "env": {
+        "NODE_ENV": "development"
+    },
+    "exec": "node",
+    "script": "src/server.js"
+}

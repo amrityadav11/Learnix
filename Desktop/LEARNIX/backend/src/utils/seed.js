@@ -8,6 +8,9 @@ const Course = require('../models/Course');
 const Blog = require('../models/Blog');
 const Settings = require('../models/Settings');
 const Coupon = require('../models/Coupon');
+const Department = require('../models/Department');
+const Role = require('../models/Role');
+const Permission = require('../models/Permission');
 
 const categories = [
     { name: 'Programming', slug: 'programming', icon: '💻', color: '#6366f1' },
@@ -43,6 +46,9 @@ const seedDB = async () => {
             Blog.deleteMany({}),
             Settings.deleteMany({}),
             Coupon.deleteMany({}),
+            Department.deleteMany({}),
+            Role.deleteMany({}),
+            Permission.deleteMany({}),
         ]);
         console.log('🗑️ Cleared existing data');
 
@@ -89,6 +95,55 @@ const seedDB = async () => {
             isEmailVerified: true,
         });
         console.log('🎓 Student created: student@learnix.com / Student@123');
+
+        // Create Permissions
+        const permissions = await Permission.insertMany([
+            { name: 'create_employee', module: 'employee', action: 'create', description: 'Create new employee' },
+            { name: 'read_employee', module: 'employee', action: 'read', description: 'View employee information' },
+            { name: 'update_employee', module: 'employee', action: 'update', description: 'Edit employee details' },
+            { name: 'delete_employee', module: 'employee', action: 'delete', description: 'Delete employee' },
+            { name: 'create_leave', module: 'hr', action: 'create', description: 'Create leave request' },
+            { name: 'read_leave', module: 'hr', action: 'read', description: 'View leave requests' },
+            { name: 'update_leave', module: 'hr', action: 'update', description: 'Manage leave requests' },
+            { name: 'read_payroll', module: 'finance', action: 'read', description: 'View payroll' },
+            { name: 'update_payroll', module: 'finance', action: 'update', description: 'Manage payroll' },
+        ]);
+        console.log('👮 Created 9 permissions');
+
+        // Create Roles
+        const hrManagerRole = await Role.create({
+            name: 'HR Manager',
+            description: 'Manages HR operations, employees, payroll, and leave',
+            permissions: permissions.map(p => p._id),
+            isActive: true
+        });
+
+        const employeeRole = await Role.create({
+            name: 'Employee',
+            description: 'Regular employee',
+            permissions: [permissions[1]._id], // read_employee
+            isActive: true
+        });
+
+        const managerRole = await Role.create({
+            name: 'Manager',
+            description: 'Department manager',
+            permissions: permissions.slice(0, 4).map(p => p._id), // employee permissions
+            isActive: true
+        });
+
+        console.log('👥 Created 3 roles');
+
+        // Create Departments
+        await Department.insertMany([
+            { name: 'Human Resources', description: 'HR Department', isActive: true },
+            { name: 'IT', description: 'Information Technology', isActive: true },
+            { name: 'Finance', description: 'Finance Department', isActive: true },
+            { name: 'Sales', description: 'Sales Department', isActive: true },
+            { name: 'Marketing', description: 'Marketing Department', isActive: true },
+            { name: 'Operations', description: 'Operations Department', isActive: true },
+        ]);
+        console.log('🏢 Created 6 departments');
 
         // Create categories
         const createdCategories = await Category.insertMany(categories);
