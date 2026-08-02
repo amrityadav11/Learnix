@@ -1,17 +1,18 @@
 import api from '../api/axios';
 
 /**
- * Convert current user to instructor
+ * Instructor Service
  */
-export const becomeInstructor = async () => {
-    try {
-        const res = await api.put('/auth/become-instructor');
-        return res.data;
-    } catch (error) {
-        throw error.response?.data || error;
-    }
-};
-
-export default {
-    becomeInstructor,
+export const instructorService = {
+    /**
+     * Convert current user to instructor
+     */
+    becomeInstructor: async () => {
+        try {
+            const res = await api.put('/auth/become-instructor');
+            return res.data;
+        } catch (error) {
+            throw error.response?.data || error;
+        }
+    },
 };

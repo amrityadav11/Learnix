@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { Upload, FileVideo, Trash2, Check, AlertCircle, Loader } from 'lucide-react';
 import api from '../../api/axios';
 import { setUser } from '../../redux/slices/authSlice';
-import instructorService from '../../services/instructorService';
+import { instructorService } from '../../services/instructorService';
 
 export default function InstructorUploadVideosPage() {
     const navigate = useNavigate();

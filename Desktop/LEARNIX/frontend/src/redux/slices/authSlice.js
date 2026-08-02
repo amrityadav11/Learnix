@@ -6,7 +6,8 @@ export const fetchCurrentUser = createAsyncThunk('auth/fetchCurrentUser', async 
     try {
         const { data } = await api.get('/auth/me');
         return data.user;
-    } catch {
+    } catch (error) {
+        console.log('fetchCurrentUser error:', error.message);
         return rejectWithValue(null);
     }
 });

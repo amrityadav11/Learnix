@@ -29,12 +29,27 @@ const notificationRoutes = require('./routes/notificationRoutes');
 const blogRoutes = require('./routes/blogRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
+const employeeRoutes = require('./routes/employeeRoutes');
+const salesRoutes = require('./routes/salesRoutes');
+const supportRoutes = require('./routes/supportRoutes');
+const hrRoutes = require('./routes/hrRoutes');
+const taskRoutes = require('./routes/taskRoutes');
+const financeRoutes = require('./routes/financeRoutes');
+const marketingRoutes = require('./routes/marketingRoutes');
+const settingsRoutes = require('./routes/settingsRoutes');
+const essRoutes = require('./routes/essRoutes');
+const hrbpRoutes = require('./routes/hrbpRoutes');
 
-// Connect DB
-connectDB();
-
+// Initialize app first
 const app = express();
 const server = http.createServer(app);
+
+// Connect DB (non-blocking)
+connectDB().catch(err => {
+    console.error('Initial DB connection failed:', err.message);
+    // Continue server startup even if DB fails initially
+    // It will retry automatically
+});
 
 const allowedOrigins = [
     process.env.CLIENT_URL || 'http://localhost:5173',
@@ -127,6 +142,16 @@ app.use('/api/v1/notifications', notificationRoutes);
 app.use('/api/v1/blogs', blogRoutes);
 app.use('/api/v1/categories', categoryRoutes);
 app.use('/api/v1/reviews', reviewRoutes);
+app.use('/api/v1/employee', employeeRoutes);
+app.use('/api/v1/sales', salesRoutes);
+app.use('/api/v1/support', supportRoutes);
+app.use('/api/v1/hr', hrRoutes);
+app.use('/api/v1/tasks', taskRoutes);
+app.use('/api/v1/finance', financeRoutes);
+app.use('/api/v1/marketing', marketingRoutes);
+app.use('/api/v1/settings', settingsRoutes);
+app.use('/api/v1/ess', essRoutes);
+app.use('/api/v1/hrbp', hrbpRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
